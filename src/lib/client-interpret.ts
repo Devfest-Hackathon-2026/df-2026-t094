@@ -47,11 +47,14 @@ const VERBS: [string, Action, string][] = [
 ];
 const NOUNS: [string, ObjectId][] = [["ごはん", "rice"], ["ご飯", "rice"], ["うめ", "ume"], ["梅", "ume"], ["のり", "nori"], ["ラップ", "wrap"], ["しゃもじ", "shamoji"]];
 
-function guess(text: string): Step {
+export function guess(text: string): Step {
   const v = VERBS.find(([k]) => text.includes(k));
   const found = (re: string) => NOUNS.find(([k]) => text.includes(k + re))?.[1] ?? null;
   const tool = found("で");
-  let onto: ObjectId | "table" | null = found("に") ?? found("の上に") ?? found("の真ん中に") ?? null;
+  // 「ごはんに」「ごはんの中に」「ごはんの上に」「ごはんの真ん中に」などを行き先として読む
+  const ontoRe = /^(?:の(?:中|なか|上|うえ|真ん中|まんなか))?に/;
+  let onto: ObjectId | "table" | null =
+    NOUNS.find(([k]) => { const i = text.indexOf(k); return i >= 0 && ontoRe.test(text.slice(i + k.length)); })?.[1] ?? null;
   if (/テーブル|つくえ/.test(text)) onto = "table";
   const target = found("を");
   const verb = v?.[2] ?? (text.match(/([ぁ-んァ-ン一-龥]+?)(る|す|く|む|う|つ)$/)?.[0] ?? text);
