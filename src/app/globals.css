@@ -1,0 +1,108 @@
+/* ことばロボ 見た目（案M「ドット文字」 11/5 確定）
+   紺の画面、文字はドット風、箱は四隅を1段欠いたピクセルの形（.px）。角丸は使わない。
+   値はデザインモック frontend/quarto/style.css と同じ。 */
+:root {
+  --navy: #13294B; --navy-deep: #0B1830; --navy-soft: #24406B;
+  --paper: #FFFFFF; --ink: #1F2E3B; --muted: #8FA3BF; --muted-ink: #4A5D78;
+  --robo: #3D8CBD; --robo-soft: #E3F2FA;
+  --ng: #E0613B; --ng-soft: #FCE8E0; --ok: #1E6B3F; --ok-soft: #DEF2E8;
+  --run: #FFF4C2; --gold: #F2C94C;
+  --s1: 8px; --s2: 16px; --s3: 24px;
+  --notch: 6px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; border-radius: 0; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--navy-deep); color: var(--paper);
+  font-family: var(--font-dot), var(--font-body), sans-serif; font-size: 18px; line-height: 1.5; }
+h1, h2, h3, p, ol, ul { margin: 0; padding: 0; }
+ol, ul { list-style: none; }
+button { font: inherit; border: 0; cursor: pointer; color: inherit; }
+button:disabled { cursor: default; opacity: .5; }
+button:focus-visible, textarea:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.px { clip-path: polygon(var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch),
+  100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%,
+  var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)), 0 var(--notch), var(--notch) var(--notch)); }
+
+/* 1280×800 の画面を窓に合わせて縮める（Stage） */
+.stage-outer { position: fixed; inset: 0; overflow: hidden; }
+.screen { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; display: flex; transform-origin: 0 0; background: var(--navy); }
+
+/* 左: アニメ */
+.anim { flex: 0 0 73%; min-width: 0; background: var(--navy); padding: var(--s3); display: flex; flex-direction: column; gap: var(--s2); }
+.video { position: relative; flex: 1; min-height: 0; background: var(--navy-soft); --notch: 12px; overflow: hidden; }
+.video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.vlabel { position: absolute; left: var(--s3); top: var(--s2); font-size: 16px; color: var(--muted); }
+.subtitle { background: var(--paper); color: var(--navy); font-size: 34px; padding: var(--s1) var(--s3); min-height: 67px; }
+.subtitle.ng { color: var(--ng); }
+.strip { display: flex; gap: var(--s1); min-height: 40px; }
+.strip li { flex: 1; min-width: 0; background: var(--paper); color: var(--ink); font-size: 15px; padding: var(--s1) var(--s2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strip li.on { background: var(--gold); }
+.strip li.done { color: var(--muted-ink); }
+.strip li.ng { background: var(--ng-soft); color: var(--ng); }
+
+/* 右: チャット */
+.chat { flex: 1; min-width: 0; background: var(--navy-deep); display: flex; flex-direction: column; position: relative; }
+.chat-hd { display: flex; justify-content: space-between; align-items: center; padding: var(--s2); border-bottom: 2px solid var(--navy-soft); font-size: 15px; }
+.chat-hd span { color: var(--muted); }
+.log { flex: 1; overflow-y: auto; padding: var(--s2); display: flex; flex-direction: column; gap: var(--s2); font-size: 15px; }
+.msg { display: flex; gap: var(--s1); align-items: flex-start; }
+.avatar { flex: none; width: 28px; height: 28px; background: var(--robo); }
+.robo .bubble { background: var(--robo-soft); color: var(--ink); padding: var(--s1) var(--s2); min-width: 0; }
+.kid { justify-content: flex-end; }
+.steps { background: var(--paper); color: var(--ink); padding: var(--s1) var(--s2); counter-reset: n; display: flex; flex-direction: column; gap: 4px; max-width: 100%; }
+.steps li { counter-increment: n; }
+.steps li::before { content: counter(n) ". "; }
+.steps li.fail { color: var(--ng); }
+.steps li.run { background: var(--run); }
+.steps li.done { color: var(--muted-ink); }
+.got { display: block; font-size: 12px; color: var(--muted-ink); }
+.steps li.fail .got { color: var(--ng); }
+.ask { font-size: 22px; }
+.views { display: flex; gap: var(--s1); font-size: 13px; color: var(--muted-ink); margin-block: var(--s1); }
+.views .hit { background: var(--ng); color: var(--paper); padding: 0 6px; }
+.btn { white-space: nowrap; padding: 6px var(--s2); font-size: 14px; }
+.btn.sub { background: var(--navy); color: var(--paper); }
+.btn.main { background: var(--robo); color: var(--paper); font-size: 16px; }
+.btn.link { background: transparent; color: var(--navy); text-decoration: underline; padding: 0; display: block; margin-bottom: var(--s1); }
+.verbs { font-size: 13px; color: var(--muted-ink); margin-bottom: var(--s1); }
+
+/* 入力欄 */
+.input { padding: var(--s2); display: flex; flex-direction: column; gap: var(--s1); border-top: 2px solid var(--navy-soft); }
+.chips { display: flex; gap: var(--s1); flex-wrap: wrap; }
+.chips button { background: var(--navy-soft); color: var(--paper); padding: 4px 12px; font-size: 14px; }
+.chips .demo { background: transparent; color: var(--muted); border: 1px dashed var(--muted); }
+.input textarea { width: 100%; height: 96px; resize: none; font: inherit; font-size: 15px; color: var(--ink); background: var(--paper); border: 0; padding: var(--s1) var(--s2); }
+.input textarea::placeholder { color: #6E7F95; }
+.send { display: flex; justify-content: space-between; align-items: center; gap: var(--s1); }
+.send .count { font-size: 13px; color: var(--muted); }
+.send .count.over { color: var(--ng); }
+
+/* 成功と比較 */
+.result { position: absolute; inset: 0; background: var(--navy-deep); display: flex; flex-direction: column; padding-bottom: var(--s2); }
+.cmp { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr; align-content: start; gap: var(--s1); padding: var(--s2); overflow-y: auto; }
+.col { background: var(--paper); color: var(--ink); padding: var(--s1) var(--s2); font-size: 14px; }
+.col h3 { font-size: 14px; color: var(--muted-ink); margin-bottom: var(--s1); font-weight: 400; }
+.col li.chg { background: var(--ok-soft); color: var(--ok); }
+.col .steps { padding: 0; background: none; }
+.asked { margin: 0 var(--s2) var(--s2); background: var(--robo-soft); color: var(--ink); padding: var(--s1) var(--s2); font-size: 15px; }
+.result .send { padding: 0 var(--s2); }
+
+/* お題選択・ロボが起きる */
+.solo { align-items: center; justify-content: center; }
+.solo-in { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s3); width: 80%; }
+.solo-in.center { align-items: center; }
+.video.wide { width: 100%; aspect-ratio: 16 / 9; flex: none; }
+.solo-t { font-size: 28px; }
+.title { font-size: 56px; color: var(--gold); font-weight: 400; }
+.intro .bubble { font-size: 22px; }
+.topics { display: flex; gap: var(--s3); width: 100%; }
+.topic { flex: 1; background: var(--paper); color: var(--ink); padding: var(--s2); display: flex; flex-direction: column; gap: var(--s1); text-align: left; text-decoration: none; }
+.topic .thumb { position: relative; aspect-ratio: 16 / 9; background: #DDEFEA; }
+.topic .thumb .vlabel { color: var(--muted-ink); }
+.topic b { font-size: 26px; font-weight: 400; }
+.topic span { color: var(--muted-ink); }
+.topic.soon { opacity: .55; pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
