@@ -27,13 +27,19 @@ type Turn = { lines: string[]; phase: Phase; outcome?: Outcome; runIdx: number }
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export default function Play() {
-  const demo = useSearchParams().has("demo");
+  const params = useSearchParams();
+  const replay = params.has("replay");
+  const demo = params.has("demo") || replay;
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState("");
   const [showVerbs, setShowVerbs] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const ta = useRef<HTMLTextAreaElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
+  // 何回目か・最初の手順・聞かれた観点。再生モードのループからも正しく読めるように ref で持つ
+  const countRef = useRef(0);
+  const firstRef = useRef<string[]>([]);
+  const askedRef = useRef<Viewpoint[]>([]);
 
   const last = turns[turns.length - 1];
   const busy = last?.phase === "reading" || last?.phase === "running";
@@ -50,9 +56,11 @@ export default function Play() {
     setTurns((ts) => ts.map((t, j) => (j === i ? { ...t, ...patch } : t)));
   }
 
-  async function send() {
-    if (busy || !lines.length || tooMany || tooLong) return;
-    const i = turns.length;
+  async function send(input: string[] = lines): Promise<Outcome | null> {
+    if (busy || !input.length || input.length > MAX_LINES || input.some((l) => [...l].length > MAX_CHARS)) return null;
+    const lines = input;
+    const i = countRef.current++;
+    if (i === 0) firstRef.current = lines;
     setTurns((ts) => [...ts, { lines, phase: "reading", runIdx: -1 }]);
     setText("");
     setShowVerbs(false);
@@ -62,7 +70,7 @@ export default function Play() {
     } catch (e) {
       update(i, { phase: e instanceof InterpretTimeout ? "timeout" : "error" });
       setText(lines.join("\n"));
-      return;
+      return null;
     }
     update(i, { phase: "running", outcome });
     const stop = outcome.kind === "fail" ? outcome.line - 1 : lines.length - 1;
@@ -71,15 +79,36 @@ export default function Play() {
       await wait(STEP_MS);
     }
     update(i, { phase: outcome.kind === "fail" ? "fail" : "success" });
+    if (outcome.kind === "fail" && outcome.viewpoint) askedRef.current = [...askedRef.current, outcome.viewpoint];
     if (outcome.kind === "success") {
-      const first = turns[0]?.lines ?? lines;
       try {
-        localStorage.setItem(STORE_KEY, JSON.stringify({ first, last: lines, asked, at: Date.now() }));
+        localStorage.setItem(STORE_KEY, JSON.stringify({ first: firstRef.current, last: lines, asked: askedRef.current, at: Date.now() }));
       } catch {}
       await wait(1500);
       setShowResult(true);
     }
+    return outcome;
   }
+
+  // 再生モード（?replay）: AI の調子が悪い本番でも、台本4回分を最初から最後まで自動で流す
+  useEffect(() => {
+    if (!replay) return;
+    let stopped = false;
+    (async () => {
+      await wait(1500);
+      for (const round of MOCK_ROUNDS) {
+        if (stopped) return;
+        setText(round.input.join("\n"));
+        await wait(2000);
+        if (stopped) return;
+        const o = await send(round.input);
+        if (!o || o.kind === "success") return;
+        await wait(3500);
+      }
+    })();
+    return () => { stopped = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replay]);
 
   function fix() {
     if (!last) return;
@@ -100,6 +129,9 @@ export default function Play() {
   }
 
   function restart() {
+    countRef.current = 0;
+    firstRef.current = [];
+    askedRef.current = [];
     setTurns([]);
     setText("");
     setShowResult(false);
@@ -172,7 +204,7 @@ export default function Play() {
             <span className={`count${tooMany || tooLong ? " over" : ""}`}>
               {tooLong ? `1行は ${MAX_CHARS}字まで` : `${lines.length} / ${MAX_LINES}行`}
             </span>
-            <button type="button" className="btn main px" disabled={busy || !lines.length || tooMany || tooLong} onClick={send}>
+            <button type="button" className="btn main px" disabled={busy || !lines.length || tooMany || tooLong} onClick={() => send()}>
               ロボにおくる
             </button>
           </div>
