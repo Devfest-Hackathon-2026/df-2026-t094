@@ -1,0 +1,225 @@
+{
+  "id": "onigiri",
+  "objects": {
+    "rice": {
+      "label": "ごはん",
+      "state": {
+        "place": "bowl",
+        "shaped": false
+      }
+    },
+    "ume": {
+      "label": "うめぼし",
+      "state": {
+        "place": "plate"
+      }
+    },
+    "nori": {
+      "label": "のり",
+      "state": {
+        "place": "plate"
+      }
+    },
+    "wrap": {
+      "label": "ラップ",
+      "state": {
+        "place": "box",
+        "spread": false
+      }
+    },
+    "shamoji": {
+      "label": "しゃもじ",
+      "state": {
+        "place": "table"
+      }
+    }
+  },
+  "actions": {
+    "spread_out": {
+      "targets": [
+        "wrap"
+      ],
+      "requires": [],
+      "effects": [
+        {
+          "obj": "wrap",
+          "spread": true,
+          "place": "table"
+        }
+      ]
+    },
+    "put:rice": {
+      "onto": [
+        "wrap",
+        "table"
+      ],
+      "default_onto": "table",
+      "tool": [
+        "shamoji"
+      ],
+      "requires": [
+        {
+          "obj": "wrap",
+          "spread": true,
+          "viewpoint": "順番",
+          "question": "その前に なにか し忘れてない？"
+        },
+        {
+          "tool_in": [
+            "shamoji"
+          ],
+          "viewpoint": "道具",
+          "question": "なにで {raw_verb}の？"
+        },
+        {
+          "onto_is": "wrap",
+          "viewpoint": "どこに",
+          "question": "どこに {raw_verb}の？"
+        }
+      ],
+      "effects": [
+        {
+          "obj": "rice",
+          "place": "wrap"
+        }
+      ]
+    },
+    "put:ume": {
+      "onto": [
+        "rice",
+        "table"
+      ],
+      "default_onto": "table",
+      "requires": [
+        {
+          "obj": "rice",
+          "place": "wrap",
+          "viewpoint": "順番",
+          "question": "その前に なにか し忘れてない？"
+        },
+        {
+          "obj": "rice",
+          "shaped": false,
+          "viewpoint": "順番",
+          "question": "その前に なにか し忘れてない？",
+          "anim": "onigiri_crack"
+        },
+        {
+          "onto_is": "rice",
+          "viewpoint": "どこに",
+          "question": "どこに {raw_verb}の？",
+          "anim": "ume_drop_table"
+        }
+      ],
+      "effects": [
+        {
+          "obj": "ume",
+          "place": "rice"
+        }
+      ]
+    },
+    "put:nori": {
+      "onto": [
+        "rice",
+        "table"
+      ],
+      "default_onto": "table",
+      "requires": [
+        {
+          "obj": "rice",
+          "shaped": true,
+          "viewpoint": "順番",
+          "question": "その前に なにか し忘れてない？"
+        }
+      ],
+      "effects": [
+        {
+          "obj": "nori",
+          "place": "on_rice_flat"
+        }
+      ]
+    },
+    "nigiru": {
+      "targets": [
+        "rice"
+      ],
+      "tool": [
+        "wrap"
+      ],
+      "requires": [
+        {
+          "obj": "rice",
+          "place": "wrap",
+          "viewpoint": "道具",
+          "question": "なにで {raw_verb}の？",
+          "anim": "nigiru_barehand"
+        }
+      ],
+      "effects": [
+        {
+          "obj": "rice",
+          "shaped": true
+        }
+      ]
+    },
+    "maku": {
+      "targets": [
+        "nori"
+      ],
+      "onto": [
+        "rice",
+        "wrap",
+        "table"
+      ],
+      "default_onto": "rice",
+      "requires": [
+        {
+          "obj": "rice",
+          "shaped": true,
+          "viewpoint": "順番",
+          "question": "その前に なにか し忘れてない？"
+        },
+        {
+          "onto_is": "rice",
+          "viewpoint": "どこに",
+          "question": "どこに {raw_verb}の？"
+        }
+      ],
+      "effects": [
+        {
+          "obj": "nori",
+          "place": "around_rice"
+        }
+      ]
+    }
+  },
+  "goal": [
+    {
+      "obj": "rice",
+      "shaped": true,
+      "viewpoint": "順番",
+      "question": "できあがり？ まだ なにか たりないみたい"
+    },
+    {
+      "obj": "ume",
+      "place": "rice",
+      "viewpoint": "順番",
+      "question": "できあがり？ まだ なにか たりないみたい"
+    },
+    {
+      "obj": "nori",
+      "place": "around_rice",
+      "viewpoint": "順番",
+      "question": "できあがり？ まだ なにか たりないみたい"
+    }
+  ],
+  "omission_rules": {
+    "allow_previous_object": true,
+    "applies_to": [
+      "target"
+    ]
+  },
+  "unknown_question": "『{raw_verb}』（{target}）って わからないよ",
+  "unknown_question_note": "targetがnullのときは「（{target}）」を括弧ごと消して『{raw_verb}』って わからないよ と表示する",
+  "missing_target_question": "なにを {raw_verb}の？"
+}
