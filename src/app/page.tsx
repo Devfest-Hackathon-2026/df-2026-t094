@@ -43,7 +43,7 @@ export default function Home() {
         </div>
         <div className="topics">
           <Link href="/play/onigiri" className="topic px">
-            <div className="thumb"><span className="vlabel">お題の絵</span></div>
+            <div className="thumb"><img src="/topics/onigiri.jpg" alt="のりを巻いた おにぎり" /></div>
             <b>おにぎりを 作る</b>
             <span>ラップ・ごはん・うめ・のり</span>
           </Link>
