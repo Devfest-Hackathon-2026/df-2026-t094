@@ -28,6 +28,7 @@ async function callApi(lines: string[]): Promise<InterpretResponse> {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ topicId: "onigiri", lines }),
   });
+  if (r.status === 504) throw new InterpretTimeout(); // サーバー側で Gemini を打ち切った
   if (!r.ok) throw new Error("interpret " + r.status);
   const res: InterpretResponse = await r.json();
   recordForReplay(lines, res);

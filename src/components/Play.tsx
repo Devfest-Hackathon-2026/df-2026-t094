@@ -9,7 +9,7 @@ import { interpret, InterpretTimeout } from "@/lib/client-interpret";
 import { describe, run, type Outcome, type Reading, type Topic, type Viewpoint } from "@/lib/engine";
 import { label } from "@/lib/labels";
 import { REPLAY_ROUNDS } from "@/lib/replay-script";
-import { safeQuestion } from "@/lib/ng";
+import { isNg, NG_MESSAGE, safeQuestion } from "@/lib/ng";
 import topicJson from "@/lib/onigiri.json";
 
 const topic = topicJson as unknown as Topic;
@@ -258,7 +258,7 @@ function TurnView({ t, isLast, onFix, showVerbs, onVerbs }: {
             return (
               <li key={k} className={cls}>
                 {l}
-                {done && r && <span className="got">受け取ったよ: {describe(r, label)}</span>}
+                {done && r && <span className="got">{isNg(r.step.raw_verb) ? NG_MESSAGE : `受け取ったよ: ${describe(r, label)}`}</span>}
               </li>
             );
           })}
