@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { InterpretResponse } from "./interpret-types";
 import { isNg, safeQuestion } from "./ng";
-import { BadRequest, checkRate, GeminiTimeout, interpretLines, parseBody, PER_IP_PER_MIN, resetForTest, TooMany } from "./server-interpret";
+import { BadRequest, checkRate, clientIp, GeminiTimeout, interpretLines, parseBody, PER_IP_PER_MIN, resetForTest, TooMany } from "./server-interpret";
 
 beforeEach(resetForTest);
 
@@ -31,6 +31,13 @@ it("1分に送れる回数をこえたら断る", () => {
   expect(() => checkRate("1.2.3.4", 0)).toThrow(TooMany);
   expect(() => checkRate("5.6.7.8", 0)).not.toThrow();
   expect(() => checkRate("1.2.3.4", 61_000)).not.toThrow();
+});
+
+it("x-forwarded-for の先頭を書きかえても、同じ相手として数える", () => {
+  expect(clientIp("9.9.9.9, 1.2.3.4")).toBe("1.2.3.4");
+  expect(clientIp("8.8.8.8, 1.2.3.4")).toBe("1.2.3.4");
+  expect(clientIp("1.2.3.4")).toBe("1.2.3.4");
+  expect(clientIp(null)).toBe("local");
 });
 
 describe("同じ文の使い回し", () => {

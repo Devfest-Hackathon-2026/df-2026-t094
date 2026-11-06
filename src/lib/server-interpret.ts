@@ -9,8 +9,8 @@ export const SERVER_TIMEOUT_MS = 7500;
 // 1つの IP から1分に送れる回数
 export const PER_IP_PER_MIN = 20;
 // 1日に Gemini を呼ぶ回数。Cloud Run は最大1台にしてあるので、これがそのまま全体の上限になる
-// （1回 約0.5円の見積もりで、1日 最大 約1ドル）
-export const GEMINI_PER_DAY = 300;
+// （1回 約0.5円の見積もりで、1日 最大 約1ドル）。審査の日などは環境変数 GEMINI_PER_DAY で増やす
+export const GEMINI_PER_DAY = Number(process.env.GEMINI_PER_DAY) || 300;
 const CACHE_MAX = 2000;
 
 export class BadRequest extends Error {}
@@ -33,6 +33,11 @@ const hits = new Map<string, number[]>();
 let day = "";
 let geminiToday = 0;
 
+/** 相手のアドレス。x-forwarded-for の先頭は送る側が自由に書けるので、Cloud Run が最後に書き足す値を使う */
+export function clientIp(xff: string | null): string {
+  return xff?.split(",").at(-1)?.trim() || "local";
+}
+
 export function checkRate(ip: string, now = Date.now()) {
   const recent = (hits.get(ip) ?? []).filter((t) => now - t < 60_000);
   if (recent.length >= PER_IP_PER_MIN) throw new TooMany("ip");
@@ -42,7 +47,8 @@ export function checkRate(ip: string, now = Date.now()) {
 }
 
 function countGemini(now = Date.now()) {
-  const d = new Date(now).toISOString().slice(0, 10);
+  // 日本時間の0時で日を区切る（世界標準時のままだと朝9時にリセットされる）
+  const d = new Date(now + 9 * 3600_000).toISOString().slice(0, 10);
   if (d !== day) { day = d; geminiToday = 0; }
   if (geminiToday >= GEMINI_PER_DAY) throw new TooMany("day");
   geminiToday++;

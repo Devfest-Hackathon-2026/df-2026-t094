@@ -3,7 +3,7 @@
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import type { InterpretResponse } from "@/lib/interpret-types";
 import { PROMPT, SCHEMA } from "@/lib/interpret-prompt";
-import { BadRequest, checkRate, GeminiTimeout, interpretLines, parseBody, TooMany } from "@/lib/server-interpret";
+import { BadRequest, checkRate, clientIp, GeminiTimeout, interpretLines, parseBody, TooMany } from "@/lib/server-interpret";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +39,7 @@ async function generate(text: string, signal: AbortSignal): Promise<InterpretRes
 
 export async function POST(req: Request) {
   try {
-    checkRate(req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local");
+    checkRate(clientIp(req.headers.get("x-forwarded-for")));
     const lines = parseBody(await req.json().catch(() => null));
     return Response.json(await interpretLines(lines, generate));
   } catch (e) {

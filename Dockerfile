@@ -14,4 +14,6 @@ ENV NODE_ENV=production HOSTNAME=0.0.0.0
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
+# 管理者（root）ではなく、node イメージに用意されている一般ユーザーで動かす
+USER node
 CMD ["node", "server.js"]
