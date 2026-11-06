@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 // 終わるまで待つ場面がない動画は、くり返し流す（ロードの間の wake_up など）
-const LOOP = new Set(["wake_up"]);
+const LOOP = new Set(["wake_up", "idle", "playing"]);
 
 type Props = {
   id: string; note?: string; wide?: boolean;
