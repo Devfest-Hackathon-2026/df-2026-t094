@@ -8,7 +8,7 @@ import Video from "@/components/Video";
 import { interpret, InterpretTimeout } from "@/lib/client-interpret";
 import { describe, run, type Outcome, type Reading, type Topic, type Viewpoint } from "@/lib/engine";
 import { label } from "@/lib/labels";
-import { MOCK_ROUNDS } from "@/lib/mock-interpret";
+import { REPLAY_ROUNDS } from "@/lib/replay-script";
 import { safeQuestion } from "@/lib/ng";
 import topicJson from "@/lib/onigiri.json";
 
@@ -28,6 +28,7 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export default function Play() {
   const params = useSearchParams();
+  // 再生モード: ?demo（台本ボタンで手で進める）と ?replay（4回分を自動で流す）。どちらも AI を呼ばない
   const replay = params.has("replay");
   const demo = params.has("demo") || replay;
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -66,7 +67,7 @@ export default function Play() {
     setShowVerbs(false);
     let outcome: Outcome;
     try {
-      outcome = run(topic, await interpret(lines), label);
+      outcome = run(topic, await interpret(lines, { offline: demo }), label);
     } catch (e) {
       update(i, { phase: e instanceof InterpretTimeout ? "timeout" : "error" });
       setText(lines.join("\n"));
@@ -96,7 +97,7 @@ export default function Play() {
     let stopped = false;
     (async () => {
       await wait(1500);
-      for (const round of MOCK_ROUNDS) {
+      for (const round of REPLAY_ROUNDS) {
         if (stopped) return;
         setText(round.input.join("\n"));
         await wait(2000);
@@ -168,7 +169,7 @@ export default function Play() {
       <section className="chat" aria-label="ロボと はなす">
         <header className="chat-hd">
           <b>ロボと はなす</b>
-          <span>{turns.length ? `${turns.length}回目` : ""}</span>
+          <span>{demo && <i className="mode">再生</i>}{turns.length ? `${turns.length}回目` : ""}</span>
         </header>
         <div className="log" ref={logRef}>
           <RoboSay>おにぎりの 作りかたを おしえて。1行に 1つずつ 書いてね</RoboSay>
@@ -183,7 +184,7 @@ export default function Play() {
             {NOUN_CHIPS.map((w) => (
               <button key={w} type="button" className="px" onClick={() => insertChip(w)}>{w}</button>
             ))}
-            {demo && MOCK_ROUNDS.map((r, k) => (
+            {demo && REPLAY_ROUNDS.map((r, k) => (
               <button key={k} type="button" className="demo" onClick={() => setText(r.input.join("\n"))}>台本{k + 1}</button>
             ))}
           </div>

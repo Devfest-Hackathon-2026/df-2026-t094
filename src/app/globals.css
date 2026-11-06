@@ -46,6 +46,7 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid var(--gold); o
 .chat { flex: 1; min-width: 0; background: var(--navy-deep); display: flex; flex-direction: column; position: relative; }
 .chat-hd { display: flex; justify-content: space-between; align-items: center; padding: var(--s2); border-bottom: 2px solid var(--navy-soft); font-size: 15px; }
 .chat-hd span { color: var(--muted); }
+.chat-hd .mode { font-style: normal; margin-right: var(--s2); padding: 0 6px; border: 1px dashed var(--muted); color: var(--muted); font-size: 12px; }
 .log { flex: 1; overflow-y: auto; padding: var(--s2); display: flex; flex-direction: column; gap: var(--s2); font-size: 15px; }
 .msg { display: flex; gap: var(--s1); align-items: flex-start; }
 .avatar { flex: none; width: 28px; height: 28px; background: var(--robo); }
