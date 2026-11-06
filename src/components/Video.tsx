@@ -1,15 +1,26 @@
 "use client";
-// 左の動画枠。public/anim/{id}.mp4 があれば再生し、無ければ枠と ID だけ出す（Veo の動画が入るまでの仮）
+// 左の動画枠。public/anim/{id}.mp4 があれば再生し、無ければ止まった絵（public/anim/still.jpg）を出す
 import { useState } from "react";
 
-export default function Video({ id, note, wide = false }: { id: string; note?: string; wide?: boolean }) {
+// 終わるまで待つ場面がない動画は、くり返し流す（ロードの間の wake_up など）
+const LOOP = new Set(["wake_up"]);
+
+type Props = {
+  id: string; note?: string; wide?: boolean;
+  // 1回流し終えたとき（true を返すと、もう1回流す）。動画が無いときも onEnded を呼ぶ
+  onEnded?: () => boolean | void;
+};
+
+export default function Video({ id, note, wide = false, onEnded }: Props) {
   const [missing, setMissing] = useState<string | null>(null);
   return (
     <div className={`video px${wide ? " wide" : ""}`}>
       {missing !== id && (
-        <video key={id} src={`/anim/${id}.mp4`} autoPlay muted playsInline onError={() => setMissing(id)} />
+        <video key={id} src={`/anim/${id}.mp4`} poster="/anim/still.jpg" autoPlay muted playsInline loop={!onEnded && LOOP.has(id)}
+          onEnded={(e) => { if (onEnded?.()) e.currentTarget.play().catch(() => {}); }}
+          onError={() => { setMissing(id); onEnded?.(); }} />
       )}
-      {missing === id && <span className="vlabel">Veo の動画 {id}{note ? `（${note}）` : ""}</span>}
+      {missing === id && <img className="still" src="/anim/still.jpg" alt={note ?? ""} />}
     </div>
   );
 }
