@@ -16,13 +16,16 @@ const topic = topicJson as unknown as Topic;
 const MAX_LINES = 10;
 const MAX_CHARS = 40;
 const STEP_MS = 900;
+// 結果の動画（失敗・成功・首をかしげる）が終わらないときも、これ以上は待たせない
+const MAX_ANIM_MS = 15000;
 const NOUN_CHIPS = ["ごはん", "うめ", "のり"];
 const VIEWPOINTS: Viewpoint[] = ["順番", "道具", "どこに"];
 const KNOWN_VERBS = "広げる・のせる・いれる・にぎる・巻く";
 const STORE_KEY = "kotoba-robo:onigiri:last";
 
 type Phase = "reading" | "running" | "fail" | "success" | "timeout" | "error";
-type Turn = { lines: string[]; phase: Phase; outcome?: Outcome; runIdx: number };
+// shown: 結果の動画を流し終えて、チャットに返事を出したか
+type Turn = { lines: string[]; phase: Phase; outcome?: Outcome; runIdx: number; shown?: boolean };
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -41,9 +44,11 @@ export default function Play() {
   const countRef = useRef(0);
   const firstRef = useRef<string[]>([]);
   const askedRef = useRef<Viewpoint[]>([]);
+  // 結果の動画が終わったら呼ぶ（send が待っている）
+  const animDoneRef = useRef<(() => void) | null>(null);
 
   const last = turns[turns.length - 1];
-  const busy = last?.phase === "reading" || last?.phase === "running";
+  const busy = !!last && !last.shown;
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const tooMany = lines.length > MAX_LINES;
   const tooLong = lines.some((l) => [...l].length > MAX_CHARS);
@@ -55,6 +60,16 @@ export default function Play() {
 
   function update(i: number, patch: Partial<Turn>) {
     setTurns((ts) => ts.map((t, j) => (j === i ? { ...t, ...patch } : t)));
+  }
+
+  // 結果の動画を流し終えるまで待ってから、チャットに返事を出す
+  async function showAfterAnim(i: number) {
+    await new Promise<void>((done) => {
+      const t = setTimeout(done, MAX_ANIM_MS);
+      animDoneRef.current = () => { clearTimeout(t); done(); };
+    });
+    animDoneRef.current = null;
+    update(i, { shown: true });
   }
 
   async function send(input: string[] = lines): Promise<Outcome | null> {
@@ -70,6 +85,7 @@ export default function Play() {
       outcome = run(topic, await interpret(lines, { offline: demo }), label);
     } catch (e) {
       update(i, { phase: e instanceof InterpretTimeout ? "timeout" : "error" });
+      await showAfterAnim(i);
       setText(lines.join("\n"));
       return null;
     }
@@ -80,6 +96,7 @@ export default function Play() {
       await wait(STEP_MS);
     }
     update(i, { phase: outcome.kind === "fail" ? "fail" : "success" });
+    await showAfterAnim(i);
     if (outcome.kind === "fail" && outcome.viewpoint) askedRef.current = [...askedRef.current, outcome.viewpoint];
     if (outcome.kind === "success") {
       try {
@@ -148,16 +165,18 @@ export default function Play() {
     if (last.phase === "running") { animId = "playing"; animNote = "再生中"; }
     if (last.phase === "fail" && last.outcome?.kind === "fail") {
       animId = last.outcome.anim; animNote = "";
-      subtitle = shownQuestion(last.outcome); subNg = true;
+      if (last.shown) { subtitle = shownQuestion(last.outcome); subNg = true; }
     }
-    if (last.phase === "success") { animId = "success"; animNote = "おにぎり完成"; subtitle = "できた！ ★"; }
+    if (last.phase === "success") { animId = "success"; animNote = "おにぎり完成"; if (last.shown) subtitle = "できた！ ★"; }
     if (last.phase === "timeout" || last.phase === "error") { animId = "tilt_head"; animNote = "首をかしげる"; }
   }
 
   return (
     <Stage>
       <section className="anim" aria-label="ロボの動き">
-        <Video id={animId} note={animNote} />
+        {/* 回ごとに作り直す（同じ失敗が2回続いても、動画を最初から流す） */}
+        <Video key={`${turns.length}-${animId}`} id={animId} note={animNote}
+          onEnded={last && !last.shown && last.phase !== "reading" && last.phase !== "running" ? () => animDoneRef.current?.() : undefined} />
         <p className={`subtitle px${subNg ? " ng" : ""}`} aria-live="polite">{subtitle}</p>
         <ol className="strip">
           {(last?.lines ?? []).map((l, k) => (
@@ -245,9 +264,9 @@ function TurnView({ t, isLast, onFix, showVerbs, onVerbs }: {
   t: Turn; isLast: boolean; onFix: () => void; showVerbs: boolean; onVerbs: () => void;
 }) {
   const o = t.outcome;
-  const failLine = o?.kind === "fail" && t.phase === "fail" ? o.line : -1;
+  const failLine = o?.kind === "fail" && t.phase === "fail" && t.shown ? o.line : -1;
   const readingOf = (n: number): Reading | undefined => o?.readings.find((r) => r.line === n);
-  const done = t.phase === "fail" || t.phase === "success";
+  const done = !!t.shown && (t.phase === "fail" || t.phase === "success");
   return (
     <>
       <div className="msg kid">
@@ -265,12 +284,12 @@ function TurnView({ t, isLast, onFix, showVerbs, onVerbs }: {
         </ol>
       </div>
       {t.phase === "reading" && <RoboSay>よみよみ中…</RoboSay>}
-      {(t.phase === "timeout" || t.phase === "error") && (
+      {t.shown && (t.phase === "timeout" || t.phase === "error") && (
         <RoboSay>
           <p className="ask">ロボが 考えすぎちゃった。もう一回 おくってみて</p>
         </RoboSay>
       )}
-      {t.phase === "fail" && o?.kind === "fail" && (
+      {t.shown && t.phase === "fail" && o?.kind === "fail" && (
         <RoboSay>
           <p className="ask">{shownQuestion(o)}</p>
           {o.viewpoint && (
@@ -287,7 +306,7 @@ function TurnView({ t, isLast, onFix, showVerbs, onVerbs }: {
           {isLast && <button type="button" className="btn sub px" onClick={onFix}>さっきの手順を なおす</button>}
         </RoboSay>
       )}
-      {t.phase === "success" && <RoboSay><p className="ask">できた！ ありがとう</p></RoboSay>}
+      {t.shown && t.phase === "success" && <RoboSay><p className="ask">できた！ ありがとう</p></RoboSay>}
     </>
   );
 }
