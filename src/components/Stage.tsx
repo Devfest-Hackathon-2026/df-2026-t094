@@ -1,8 +1,9 @@
 "use client";
 // 1280×800 の画面を、窓の大きさに合わせて縮めて真ん中に置く（タブレット横・PC 向けの並びのまま）
 import { useLayoutEffect, useRef } from "react";
+import Bgm from "./Bgm";
 
-export default function Stage({ className = "", children }: { className?: string; children: React.ReactNode }) {
+export default function Stage({ className = "", bgm, children }: { className?: string; bgm?: string; children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const fit = () => {
@@ -17,7 +18,7 @@ export default function Stage({ className = "", children }: { className?: string
   }, []);
   return (
     <div className="stage-outer">
-      <div ref={ref} className={`screen ${className}`}>{children}</div>
+      <div ref={ref} className={`screen ${className}`}>{children}<Bgm src={bgm} /></div>
     </div>
   );
 }

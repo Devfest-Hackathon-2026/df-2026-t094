@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Stage from "@/components/Stage";
+import { sfx } from "@/lib/sound";
 import Video from "@/components/Video";
 import { interpret, InterpretTimeout } from "@/lib/client-interpret";
 import { describe, run, type Outcome, type Reading, type Topic, type Viewpoint } from "@/lib/engine";
@@ -15,7 +16,10 @@ import topicJson from "@/lib/onigiri.json";
 const topic = topicJson as unknown as Topic;
 const MAX_LINES = 10;
 const MAX_CHARS = 40;
-const STEP_MS = 900;
+// 送ってから結果の動画までの「よみよみ中…」（playing の動画）は、手順の行数や AI の速さによらず 5 秒にそろえる
+const PLAYING_MS = 5000;
+// AI が 5 秒より遅かったときでも、1行ずつ光らせる最短の間
+const MIN_STEP_MS = 250;
 // 結果の動画（失敗・成功・首をかしげる）が終わらないときも、これ以上は待たせない
 const MAX_ANIM_MS = 15000;
 const NOUN_CHIPS = ["ごはん", "うめ", "のり"];
@@ -80,6 +84,7 @@ export default function Play() {
     setTurns((ts) => [...ts, { lines, phase: "reading", runIdx: -1 }]);
     setText("");
     setShowVerbs(false);
+    const startedAt = Date.now();
     let outcome: Outcome;
     try {
       outcome = run(topic, await interpret(lines, { offline: demo }), label);
@@ -91,12 +96,16 @@ export default function Play() {
     }
     update(i, { phase: "running", outcome });
     const stop = outcome.kind === "fail" ? outcome.line - 1 : lines.length - 1;
+    // 残りの時間を、進める行の数で分ける
+    const step = Math.max(MIN_STEP_MS, (PLAYING_MS - (Date.now() - startedAt)) / (stop + 1));
     for (let k = 0; k <= stop; k++) {
       update(i, { runIdx: k });
-      await wait(STEP_MS);
+      await wait(step);
     }
     update(i, { phase: outcome.kind === "fail" ? "fail" : "success" });
     await showAfterAnim(i);
+    // 結果の動画を見終えて、ふきだしが出るときに効果音
+    sfx(outcome.kind === "fail" ? "fail" : "success");
     if (outcome.kind === "fail" && outcome.viewpoint) askedRef.current = [...askedRef.current, outcome.viewpoint];
     if (outcome.kind === "success") {
       try {
@@ -161,8 +170,8 @@ export default function Play() {
   let subtitle = "";
   let subNg = false;
   if (last) {
-    if (last.phase === "reading") { subtitle = "よみよみ中…"; animNote = "よみよみ中"; }
-    if (last.phase === "running") { animId = "playing"; animNote = "再生中"; }
+    // 読んでいる間と、手順を1行ずつ進める間は、どちらも playing の動画に「よみよみ中…」のふきだしを重ねる
+    if (last.phase === "reading" || last.phase === "running") { animId = "playing"; animNote = "よみよみ中"; subtitle = "よみよみ中…"; }
     if (last.phase === "fail" && last.outcome?.kind === "fail") {
       animId = last.outcome.anim; animNote = "";
       if (last.shown) { subtitle = shownQuestion(last.outcome); subNg = true; }
@@ -172,13 +181,13 @@ export default function Play() {
   }
 
   return (
-    <Stage>
+    <Stage bgm="/bgm-game.mp3">
       <section className="anim" aria-label="ロボの動き">
         {/* 回ごとに作り直す（同じ失敗が2回続いても、動画を最初から流す） */}
         <Video key={`${turns.length}-${animId}`} id={animId} note={animNote}
           onEnded={last && !last.shown && last.phase !== "reading" && last.phase !== "running" ? () => animDoneRef.current?.() : undefined}>
           {/* 動画を流し終えたら、ロボの質問を動画の上にふきだしで出す */}
-          {subtitle && <p className={`say px${subNg ? " ng" : ""}`} aria-live="polite">{subtitle}</p>}
+          {subtitle && <p className={`say${subNg ? " ng" : ""}`} aria-live="polite">{subtitle}</p>}
         </Video>
         <ol className="strip">
           {(last?.lines ?? []).map((l, k) => (
@@ -231,11 +240,11 @@ export default function Play() {
             </button>
           </div>
         </div>
-
-        {showResult && turns.length > 0 && (
-          <Result first={turns[0].lines} last={turns[turns.length - 1].lines} asked={asked} onAgain={restart} />
-        )}
       </section>
+      {/* クリアしたら、画面の真ん中に結果と「お題に もどる」「もう一回」を出す */}
+      {showResult && turns.length > 0 && (
+        <Result first={turns[0].lines} last={turns[turns.length - 1].lines} asked={asked} onAgain={restart} />
+      )}
     </Stage>
   );
 }
@@ -315,8 +324,10 @@ function TurnView({ t, isLast, onFix, showVerbs, onVerbs }: {
 
 function Result({ first, last, asked, onAgain }: { first: string[]; last: string[]; asked: Viewpoint[]; onAgain: () => void }) {
   return (
-    <div className="result" role="dialog" aria-label="できた">
-      <header className="chat-hd"><b>できた！</b><span>{first.length}行 → {last.length}行</span></header>
+    <div className="guide-bg">
+    <div className="result px" role="dialog" aria-modal="true" aria-label="できた">
+      <h2>できた！ ★</h2>
+      <p className="result-n">てじゅんが {first.length}行 → {last.length}行 に なったよ</p>
       <div className="cmp">
         <div className="col px">
           <h3>さいしょの てじゅん</h3>
@@ -330,10 +341,11 @@ function Result({ first, last, asked, onAgain }: { first: string[]; last: string
         </div>
       </div>
       {asked.length > 0 && <p className="asked px">ロボに 聞かれたこと：{asked.join(" → ")}</p>}
-      <div className="send">
+      <div className="guide-btns">
         <Link href="/" className="btn sub px">お題に もどる</Link>
         <button type="button" className="btn main px" onClick={onAgain}>もう一回</button>
       </div>
+    </div>
     </div>
   );
 }

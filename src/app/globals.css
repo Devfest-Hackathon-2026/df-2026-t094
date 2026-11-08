@@ -32,12 +32,20 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid var(--gold); o
 .anim { flex: 0 0 73%; min-width: 0; background: var(--navy); padding: var(--s3); display: flex; flex-direction: column; gap: var(--s2); }
 .video { position: relative; flex: 1; min-height: 0; background: var(--navy-soft); --notch: 12px; overflow: hidden; }
 .video video, .video .still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* 遊ぶ画面の枠は16:9より細いので、左のごはんの茶わんが切れないよう少し左寄りに見せる（右はのりの皿まで入る） */
+.video:not(.wide) video, .video:not(.wide) .still { object-position: 30% 50%; }
 .vlabel { position: absolute; left: var(--s3); top: var(--s2); font-size: 16px; color: var(--muted); }
 /* 動画の上に出すロボのふきだし（動画を流し終えたあと） */
-.say { position: absolute; top: var(--s3); left: 50%; transform: translateX(-50%); max-width: 80%; z-index: 1;
-  background: var(--paper); color: var(--navy); font-size: 34px; padding: var(--s1) var(--s3); --notch: 6px;
-  box-shadow: 0 4px 0 rgba(11, 24, 48, 0.35); }
-.say.ng { color: var(--ng); }
+.say { position: absolute; top: var(--s3); left: 50%; transform: translateX(-50%); max-width: 80%; z-index: 1; margin: 0;
+  background: var(--paper); color: var(--navy); font-size: 34px; line-height: 1.35; padding: 10px 28px; text-align: center;
+  border: 5px solid var(--navy); box-shadow: 6px 6px 0 rgba(11, 24, 48, 0.45); }
+/* しっぽ（ドットの階段で、下のロボの頭のほうへ） */
+.say::before, .say::after { content: ""; position: absolute; left: 50%;
+  clip-path: polygon(0 0, 100% 0, 100% 25%, 75% 25%, 75% 50%, 50% 50%, 50% 75%, 25% 75%, 25% 100%, 0 100%); }
+.say::before { width: 40px; height: 40px; bottom: -40px; margin-left: -5px; background: var(--navy); }
+.say::after { width: 25px; height: 25px; bottom: -25px; margin-left: 0; background: var(--paper); }
+.say.ng { color: var(--ng); border-color: var(--ng); }
+.say.ng::before { background: var(--ng); }
 .strip { display: flex; gap: var(--s1); min-height: 40px; }
 .strip li { flex: 1; min-width: 0; background: var(--paper); color: var(--ink); font-size: 15px; padding: var(--s1) var(--s2);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -84,14 +92,6 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid var(--gold); o
 .send .count.over { color: var(--ng); }
 
 /* 成功と比較 */
-.result { position: absolute; inset: 0; background: var(--navy-deep); display: flex; flex-direction: column; padding-bottom: var(--s2); }
-.cmp { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr; align-content: start; gap: var(--s1); padding: var(--s2); overflow-y: auto; }
-.col { background: var(--paper); color: var(--ink); padding: var(--s1) var(--s2); font-size: 14px; }
-.col h3 { font-size: 14px; color: var(--muted-ink); margin-bottom: var(--s1); font-weight: 400; }
-.col li.chg { background: var(--ok-soft); color: var(--ok); }
-.col .steps { padding: 0; background: none; }
-.asked { margin: 0 var(--s2) var(--s2); background: var(--robo-soft); color: var(--ink); padding: var(--s1) var(--s2); font-size: 15px; }
-.result .send { padding: 0 var(--s2); }
 
 /* お題選択・ロボが起きる */
 .solo { align-items: center; justify-content: center; }
@@ -102,7 +102,7 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid var(--gold); o
 .title { font-size: 56px; color: var(--gold); font-weight: 400; }
 .intro .bubble { font-size: 22px; }
 .topics { display: flex; gap: var(--s3); width: 100%; }
-.topic { flex: 1; background: var(--paper); color: var(--ink); padding: var(--s2); display: flex; flex-direction: column; gap: var(--s1); text-align: left; text-decoration: none; }
+.topic { flex: 1; border: 0; font: inherit; cursor: pointer; background: var(--paper); color: var(--ink); padding: var(--s2); display: flex; flex-direction: column; gap: var(--s1); text-align: left; text-decoration: none; }
 .topic .thumb { position: relative; aspect-ratio: 16 / 9; background: #DDEFEA; }
 .topic .thumb .vlabel { color: var(--muted-ink); }
 .topic .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -111,3 +111,36 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid var(--gold); o
 .topic.soon { opacity: .55; pointer-events: none; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* BGM のオン・オフ（画面の左上のすき間に小さく） */
+.bgm { position: absolute; left: var(--s3); top: 2px; z-index: 5; background: var(--navy-soft); color: var(--paper); border: 0; font: inherit; font-size: 12px; line-height: 18px; padding: 0 8px; cursor: pointer; --notch: 3px; }
+.bgm[aria-pressed="true"] { background: var(--paper); color: var(--navy); }
+
+/* お題を押したときの説明（目標と遊びかた）。文は短く、字は大きく */
+.guide-bg { position: absolute; inset: 0; z-index: 10; background: rgba(11, 24, 48, 0.75); display: flex; align-items: center; justify-content: center; }
+.guide { width: 860px; background: var(--paper); color: var(--ink); padding: 32px 44px; --notch: 8px; display: flex; flex-direction: column; gap: 22px; }
+.guide h2 { font-size: 40px; font-weight: 400; color: var(--navy); margin: 0; text-align: center; }
+.guide-goal { margin: 0; font-size: 28px; text-align: center; background: var(--gold); color: var(--navy); padding: 10px var(--s3); }
+.guide-goal b { font-weight: 400; font-size: 20px; margin-right: var(--s2); }
+.guide-steps { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--s2); }
+.guide-steps li { flex: 1; background: var(--robo-soft); padding: var(--s2); display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.guide-steps i { font-style: normal; width: 40px; height: 40px; line-height: 40px; background: var(--robo); color: var(--paper); font-size: 24px; }
+.guide-steps b { font-weight: 400; font-size: 28px; color: var(--navy); }
+.guide-steps span { font-size: 19px; line-height: 1.5; color: var(--muted-ink); }
+.guide-items { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 20px; }
+.guide-items b { font-weight: 400; color: var(--muted-ink); margin-right: 6px; }
+.guide-items span { background: var(--navy); color: var(--paper); padding: 4px 14px; --notch: 4px; }
+.guide-tip { margin: 0; text-align: center; font-size: 22px; color: var(--ng); }
+.guide-btns { display: flex; justify-content: center; gap: var(--s3); }
+.guide-btns .btn { font-size: 24px; padding: 10px 40px; text-decoration: none; }
+
+/* クリアしたときの結果（画面の真ん中） */
+.result { width: 860px; max-height: 720px; background: var(--paper); color: var(--ink); padding: 28px 44px; --notch: 8px; display: flex; flex-direction: column; gap: var(--s2); }
+.result h2 { font-size: 44px; font-weight: 400; color: var(--navy); margin: 0; text-align: center; }
+.result-n { margin: 0; text-align: center; font-size: 24px; background: var(--gold); color: var(--navy); padding: 8px var(--s3); }
+.cmp { min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); overflow-y: auto; }
+.col { background: var(--robo-soft); color: var(--ink); padding: var(--s2); font-size: 18px; }
+.col h3 { font-size: 18px; color: var(--muted-ink); margin: 0 0 var(--s1); font-weight: 400; }
+.col li.chg { background: var(--ok-soft); color: var(--ok); }
+.col .steps { padding: 0; background: none; }
+.asked { margin: 0; background: var(--robo-soft); color: var(--ink); padding: var(--s1) var(--s2); font-size: 18px; text-align: center; }
