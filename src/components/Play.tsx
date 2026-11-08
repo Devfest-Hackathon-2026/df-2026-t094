@@ -168,7 +168,7 @@ export default function Play() {
       if (last.shown) { subtitle = shownQuestion(last.outcome); subNg = true; }
     }
     if (last.phase === "success") { animId = "success"; animNote = "おにぎり完成"; if (last.shown) subtitle = "できた！ ★"; }
-    if (last.phase === "timeout" || last.phase === "error") { animId = "tilt_head"; animNote = "首をかしげる"; }
+    if (last.phase === "timeout" || last.phase === "error") { animId = "tilt_head"; animNote = "首をかしげる"; if (last.shown) subtitle = "あれ？ もう一回 おくって"; }
   }
 
   return (
@@ -176,8 +176,10 @@ export default function Play() {
       <section className="anim" aria-label="ロボの動き">
         {/* 回ごとに作り直す（同じ失敗が2回続いても、動画を最初から流す） */}
         <Video key={`${turns.length}-${animId}`} id={animId} note={animNote}
-          onEnded={last && !last.shown && last.phase !== "reading" && last.phase !== "running" ? () => animDoneRef.current?.() : undefined} />
-        <p className={`subtitle px${subNg ? " ng" : ""}`} aria-live="polite">{subtitle}</p>
+          onEnded={last && !last.shown && last.phase !== "reading" && last.phase !== "running" ? () => animDoneRef.current?.() : undefined}>
+          {/* 動画を流し終えたら、ロボの質問を動画の上にふきだしで出す */}
+          {subtitle && <p className={`say px${subNg ? " ng" : ""}`} aria-live="polite">{subtitle}</p>}
+        </Video>
         <ol className="strip">
           {(last?.lines ?? []).map((l, k) => (
             <li key={k} className={`px ${stepClass(last, k)}`}>{k + 1} {l}</li>

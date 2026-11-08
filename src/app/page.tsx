@@ -60,7 +60,7 @@ export default function Home() {
             <span>ラップ・ごはん・うめ・のり</span>
           </Link>
           <div className="topic px soon" aria-disabled="true">
-            <div className="thumb"><span className="vlabel">お題の絵</span></div>
+            <div className="thumb"><img src="/topics/randoseru.jpg" alt="ランドセルに ノートを 入れる" /></div>
             <b>ランドセルの じゅんび</b>
             <span>（つぎのお題・じゅんび中）</span>
           </div>
