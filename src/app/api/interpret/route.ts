@@ -8,7 +8,7 @@ import { BadRequest, checkRate, clientIp, GeminiTimeout, interpretLines, parseBo
 export const dynamic = "force-dynamic";
 
 const MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
-// 考える量。80文テストは指定なし（ふつう）で流した。MINIMAL のほうが速い
+// 考える量。指定しなければモデルの既定値。MINIMAL のほうが速い
 const THINKING = process.env.GEMINI_THINKING as ThinkingLevel | undefined;
 
 let ai: GoogleGenAI | undefined;

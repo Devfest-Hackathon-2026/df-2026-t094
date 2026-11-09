@@ -117,7 +117,7 @@ src/
     mock-interpret.ts    Gemini を使わないときの読み取り
     ng.ts           不適切な言葉の確認
 public/             動画・絵・音
-docs/               アーキテクチャ図
+docs/               アーキテクチャ図・動画の一覧
 scripts/            効果音を作るスクリプト
 ```
 
