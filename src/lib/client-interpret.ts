@@ -1,5 +1,5 @@
 // 画面から変換を呼ぶ入口。いまはモック（台本どおりの答え＋かんたんな言葉の当てはめ）を返す。
-// ソウタさんの POST /api/interpret ができたら NEXT_PUBLIC_USE_API=1 で本物に切り替える（11/7 統合）。
+// POST /api/interpret ができたら NEXT_PUBLIC_USE_API=1 で本物に切り替える（11/7 統合）。
 // 再生モード（offline: true）のときは、NEXT_PUBLIC_USE_API=1 でも AI を呼ばない。
 import type { Action, InterpretResponse, ObjectId, Step } from "./interpret-types";
 import { findReplay, recordForReplay } from "./replay-script";
